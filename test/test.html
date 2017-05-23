@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+<scrip>
+	var xhr = new XMLHttpRequest();
+	var formdata = new FormData();
+	var fileInput = document.getElementById("myFile");
+	var file = fileInput.files[0];
+
+	formData.append('myFile', file);
+	xhr.open('POST','/upload.php');
+	xhr.onload = function () {
+		if (this.status === 200) {
+			//对请求成功的处理
+		}
+	}
+	xhr.send(formData);
+	xhr = null;
+</scrip>
+</body>
+</html>
