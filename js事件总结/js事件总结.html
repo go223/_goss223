@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>js事件总结</title>
+	<meta charset="utf-8">
+</head>
+<body>
+<div>
+	<ul id="ul">
+		<li>a</li>
+		<li>b</li>
+		<li>c</li>
+	</ul>
+	<a href="http://www.baidu.com" target="_blank">我是链接</a>
+	<hr>
+	<div id="div">
+		<span id="span">
+			<a id="aTag">事件测试</a>
+		</span>
+	</div>
+	<hr>
+	<button id="btn">按钮</button>
+	<button id="btn1">按钮1</button>
+	<button id="btn2">按钮2</button>
+	<input type="text" name="change">
+</div>
+<script type="text/javascript">
+	/*
+		一、事件流
+		事件流描述的是从页面中接收事件的顺序，IE和Netscape提出来差不多完全相反的事件流的概念，IE事件流是事件冒泡流，Netscape事件流是事件捕获流
+
+		事件冒泡
+
+		IE的事件流叫做事件冒泡，即事件开始时由最具体的元素（文档中嵌套最深的那个节点）接收，然后逐级向上（一直到文档）；如下代码：
+		<div id="div">
+			<span id="span">
+				<a id="aTag">事件测试</a>
+			</span>
+		</div>
+
+
+		document.getElementById("aTag").addEventListener('click',aTag);
+		document.getElementById("span").addEventListener('click',span);
+		document.getElementById("div").addEventListener('click',div);
+
+		function aTag (e) {
+			alert("点击的是a标签");
+		}
+		function span(e) {
+			alert("点击是span标签");
+		}
+		function div(e) {
+			alert("点击的是div标签");
+		}
+
+		addEventListener的第三个参数设置为true，即为捕获事件，默认为false；否则的话，事件流还是和上面的一样，因为不管是在IE还是标准浏览器，事件冒泡浏览器都是支持的。
+
+		DOM事件流
+
+		DOM2级事件规定的事件流包括三个阶段，分别是：事件捕获阶段，处于目标阶段和事件冒泡阶段。
+
+		DOM0级事件处理程序
+		var oBtn = document.getElementById("btn");
+		oBtn.onclick = function () {
+			alert("Click");
+			alert(this.id)
+		}
+		使用DOM0级方法指定的事件处理程序被认为是元素的方法，处理程序是在元素的作用域进行的，程序中this是引用的是当前元素
+		单击btn后，通过this.id取得元素的属性id，还可以通过this访问元素的任何属性和方法，以这种方式添加的事件处理程序在事件流的冒泡阶段处理
+		也可以删除通过DOM0级方法指定的事件处理程序，只要将事件处理程序的属性设置为null即可。
+		例如：btn.onclick = null;//删除事件处理程序。
+
+		DOM2级事件处理程序
+
+		DOM2级事件定义了2个方法，用于处理指定和删除事件处理程序的操作；
+
+		addEventListener()和removeEventListener()。所有DOM节点都包含这两个方法，他们包含三个参数，第一个参数为事件类型；第二个参数为事件函数；第三个参数为布尔值，如果是true的话，说明是事件流捕获事件，如果是false的话，那么事件是冒泡事件。
+		btn.addEventListener('click',function (e) {
+			alert(this.id)
+		},false);
+		上面的点击事件是在冒泡阶段被触发，与DOM0级方法一样，这里添加的事件处理程序也是在其依附的元素作用域中运行，使用DOM2级添加事件处理程序的好处是可以添加多个事件处理程序，如下代码：
+		var btn = document,getElementById("btn");
+		btn.addEventListener('click',function (e) {
+			alert(this.id)
+		},false);
+		btn.addEventListener('click',function(e) {
+			alert("测试第二次事件绑定");
+		},false);
+		上面的代码被弹出2次对话框，而在DOM0级是不可以的；它永远是执行最后一次的。
+
+		addEventListener添加的事件只能使用removeEventListener来删除相对应的事件。
+
+
+		IE事件处理的程序
+
+		IE实现了与DOM类似的2个方法，分别是attachEvent()和detachEvent()，这两个方法只接受2个参数，第一个参数事件名称，第二个蚕食是要处理的函数；由于IE8及更早版本只支持事件冒泡，所以通过attachEvent添加的事件处理程序会被添加到冒泡阶段；
+		btn.attachEvent('onclick',handler)
+		需要注意的是：attachEvent的事件名称是onclick，而addEventListener的事件名称是click，且IE中使用attachEvent与使用DOM0级方法的主要区别在于事件处理程序的作用域 ，在使用DOM0级情况下，事件处理程序在其所属元素的作用域内运行，在使用attachEvent方法的情况下， 事件处理程序在全局作用域下运行，其中this等于window。
+
+		btn.attachEvent('onclick',function(e){
+			alert(1);
+		});
+		btn.attachEvent('onclick',function(e){
+			alert(2);
+		});
+		与DOM方法不同的是，这些事件处理程序不是以添加他们的顺序执行，而是以相反的顺序触发，比如如上代码，会先弹出2，然后弹出1对话框；
+		使用attachEvent注册的事件只能使用detachEvent方法来移除
+
+		var EventUtil = {
+			addHandler: function (elemnt,type,handler) {
+				if (element.addEventListener) {
+					element.addEventListener(type,handler,false);
+				} else if (element.attachEvent) {
+					element.attachEvent("on"+type,handler);
+				} else {
+					element["on"+type] = handler;
+				}
+			},
+			removeHandler: function (element,type,handler) {
+				if (element.removeEventListener) {
+					element.removeEventListener(type,handler,false);
+				} else if (element.detachEvent) {
+					element.detchEvent("on"+type,handler);
+				} else {
+					element["on"+type] = null;
+				}
+			}
+		}
+
+
+
+		事件对象
+		在触发DOM上的某个事件时，会产生一个事件对象event，这个对象中包含着所有与事件有关的信息；包括导致事件的元素，事件的类型以及其他与特定事件相关的信息。我们来看看DOM0级和DOM2级的事件对象Event
+
+		事件对象的含义：
+		bubbles				Boolean		事件是否冒泡
+		cancelable			Boolean		是否可以取消事件的默认行为
+		currentTarget		Boolean		事件处理程序当前正在处理事件的那个元素
+		defaultPrevented	Boolean		为true表示已经调用了preventDefault()
+		detail				Integer		与事件相关的细节信息
+		eventPhase			Integer		调用事件处理程序的阶段：1表示捕获阶段，2表示处于目标，3表示冒泡阶段
+		preventDefault()	function	取消事件的默认行为。如果cancelable是true，则可以使用这个方法
+		stopImmediatePropagation()	function 	取消事件的进一步捕获或冒泡，同时阻止任何事件处理程序被调用
+		stopPropagation()	function 	取消事件的进一步捕获或冒泡。如果bubbles为true，则可以使用这个方法
+		target 				Element 	事件的目标
+		type				String		被触发的事件的类型
+		view				AbstractView	与事件关联的抽象视图。等同于发生事件的window对象
+
+
+		理解currentTarget与target
+
+		在事件处理程序内部，this始终等于currentTarget值，即currentTarget是指当前被触发或者说正在处理事件的那个元素，而target是指当前的目标元素；比如如下代码，对btn按钮触发点击事件，那么e.currentTarget指向了this，e.target也指向了this，如下代码
+		oBtn1.onclick = function (e) {
+			console.log(e.currentTarget == this);
+			console.log(e.target == this);
+		}
+		但是如果对document.body触发点击的话，那么e.currentTarget就指向了document.body了，那么e.target指向与btn那个元素了。
+
+		理解特定事件的默认行为
+		在标准浏览器下，在阻止特定事件的默认行为，可以使用preventDefault()方法，比如，我点击一个链接，可以使用preventDefault()方法阻止默认行为，阻止打开新窗口。
+		e.preventDefault()
+		window.event.cancelBubble()
+
+		焦点事件：当前元素获得或失去焦点时触发
+		blur	在元素失去焦点时触发，这个事件不会冒泡，所有浏览器都支持。
+		foucs	在元素获得焦点时触发，这个事件不会冒泡，所有浏览器都支持。
+
+		鼠标事件：当用户通过鼠标在页面操作时触发
+
+		click事件		在用户单击鼠标按钮或者按下回车键触发
+		dbclick事件		在用户双击鼠标按钮时触发
+		mousedown事件	在用户按下了任意鼠标按钮时被触发，不能通过键盘触发这个事件
+		mouseenter事件	在鼠标光标从元素外部移动到元素范围之内被触发，这个事件不冒泡
+		mousemove事件	当鼠标指针在元素内部移动时触发
+		mouseover事件	鼠标指针在元素外部，用户将移入另一个元素的边界时触发
+		mouseup事件		用户释放鼠标按钮时触发
+
+		页面上所有的元素都支持鼠标事件，除了mouseenter和mouseleave所有鼠标事件都会冒泡，也可以被取消，而取消鼠标事件将会影响浏览器的默认行为
+
+	*/
+	document.getElementById("aTag").addEventListener('click',aTag);
+	document.getElementById("span").addEventListener('click',span);
+	document.getElementById("div").addEventListener('click',div);
+
+	function aTag (e) {
+		alert("点击的是a标签");
+	}
+	function span(e) {
+		alert("点击是span标签");
+	}
+	function div(e) {
+		alert("点击的是div标签");
+	}
+
+	var oBtn = document.getElementById("btn");
+	oBtn.onclick = function (e) {
+		alert("Click");
+		alert(this.id);
+		console.log(e);
+	}
+	btn.addEventListener('click',function (e) {
+		alert(this.id)
+	},false);//默认false为事件流的事件捕获
+
+	var oBtn1 = document.getElementById("btn1");
+	var oBtn2 = document.getElementById("btn2");
+
+	oBtn1.onclick = function (e) {
+		console.log(e.currentTarget == this);
+		console.log(e.target == this);
+	}
+
+	//跨浏览器事件对象
+	var EventUtil = {
+		addHandler: function (element,type,handler) {
+			if (element.addEventListener) {
+				element.addEventListener(type,handler,false);
+			} else if (element.attachEvent) {
+				element.attachEvent("on"+type,handler);
+			} else {
+				element["on"+type] = handler;
+			}
+		},
+		removerHandler: function (element,type,handler) {
+			if (element.addEventListener) {
+				element.removeEventListener(type,handler,false);
+			} else if (element.attachEvent) {
+				element.removedetachEvent("on"+type,handler);
+			} else {
+				element["on"+type] = null
+			}
+		},
+		getEvent: function (event) {
+			return event ? event : window.event;
+		},
+		getTarget: function (event) {
+			return event.target || event.srcElement;
+		},
+		preventDefault: function (event) {
+			if (event.preventDefault) {
+				event.preventDefault();
+			} else {
+				event.returnValue = false;
+			}
+		},
+		stopPropagation: function (event) {
+			if (event.stopPropagation) {
+				event.stopPropagation();
+			} else {
+				event.cancelBubble = true;
+			}
+		}
+	}
+
+	// 屏幕 clientX和clientY不包含滚动条的位置
+	// pageX和pageY包含滚动条的距离
+
+	EventUtil.addHandler(oBtn1,'click',function (e) {
+		e = EventUtil.getEvent(event);
+		var pageX = e.pageX;
+		var pageY = e.pageY;
+		if (!pageX) {
+			pageX = e.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft);
+		}
+		if (!pageY) {
+			pageY = e.clientY + (document.body.scrollTop || document.documentElement.scrollTop);
+		}
+		alert (pageX+";"+pageY);
+	})
+</script>
+</body>
+</html>
